@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Negative prefixes</title>
+<link rel="icon" type="image/png" sizes="48x48" href="favicon.png">
+<style>
+  :root{
+    --bg:#0f1116;
+    --card:#1a1d27;
+    --border:#2b2f3a;
+    --text:#e8e9ee;
+    --muted:#9aa0ad;
+    --accent:#5b8def;
+    --green:#2fbf71;
+    --green-bg:#12321f;
+    --green-text:#c9f6dc;
+    --red:#e6534a;
+    --red-bg:#3a1616;
+    --red-text:#ffd0cc;
+    --input-bg:#12141b;
+  }
+  html[data-theme="light"]{
+    --bg:#f4f5f8;
+    --card:#ffffff;
+    --border:#dfe2ea;
+    --text:#1b1d24;
+    --muted:#6b7180;
+    --accent:#3763d6;
+    --green:#1f9d5c;
+    --green-bg:#e4f8ec;
+    --green-text:#0f5c33;
+    --red:#d63c33;
+    --red-bg:#fdeceb;
+    --red-text:#8a231c;
+    --input-bg:#f9f9fb;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding:24px 16px 60px;
+    transition:background .2s, color .2s;
+  }
+  .wrap{max-width:860px;margin:0 auto;}
+  h1{text-align:center;font-size:1.5rem;margin-bottom:4px;}
+  .sub{text-align:center;color:var(--muted);font-size:0.9rem;margin-bottom:20px;}
+  .top-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:5;
+    border-bottom:1px solid var(--border);margin-bottom:16px;
+  }
+  #timer{
+    font-size:1.3rem;font-weight:700;padding:6px 14px;border-radius:8px;
+    background:var(--card);border:1px solid var(--border);min-width:80px;text-align:center;
+  }
+  #timer.warn{color:var(--red);border-color:var(--red);}
+  #score{font-size:1rem;color:var(--muted);}
+  #theme-toggle{
+    background:var(--card);color:var(--text);border:1px solid var(--border);
+    padding:6px 12px;border-radius:8px;font-size:0.85rem;cursor:pointer;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+    gap:10px;
+  }
+  .item{
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:12px 14px;display:flex;align-items:center;gap:8px;
+  }
+  .num{color:var(--muted);font-size:0.8rem;min-width:22px;}
+  input.answer{
+    width:76px;padding:8px 8px;border-radius:8px;border:1px solid var(--border);
+    background:var(--input-bg);color:var(--text);font-size:1rem;text-align:center;
+    outline:none;font-family:inherit;transition:background .15s,border-color .15s;
+  }
+  input.answer:focus{border-color:var(--accent);}
+  input.answer.correct{background:var(--green-bg);border-color:var(--green);color:var(--green-text);}
+  input.answer.incorrect{background:var(--red-bg);border-color:var(--red);color:var(--red-text);}
+  input.answer:disabled{opacity:0.8;}
+  .stem{font-size:1.1rem;font-weight:600;}
+  /* Correct-answer text exists in the markup for reference but is never shown to the learner */
+  .reveal{display:none !important;}
+  #check-btn{
+    display:block;width:100%;background:var(--accent);color:#fff;border:none;
+    padding:13px 18px;border-radius:10px;font-size:1rem;font-weight:600;
+    cursor:pointer;margin-top:16px;
+  }
+  #check-btn:hover{opacity:0.9;}
+  #check-btn:disabled{opacity:0.5;cursor:not-allowed;}
+  #finish-overlay{
+    display:none;position:fixed;inset:0;background:rgba(10,11,15,0.55);
+    align-items:center;justify-content:center;z-index:20;
+  }
+  #finish-box{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:28px 30px;text-align:center;max-width:340px;color:var(--text);
+  }
+  #finish-emoji{font-size:3rem;line-height:1;margin-bottom:6px;}
+  #finish-box h2{margin-top:0;margin-bottom:4px;}
+  #finish-box p{color:var(--muted);}
+  button.primary{
+    background:var(--accent);color:#fff;border:none;padding:10px 24px;
+    border-radius:8px;font-size:0.95rem;cursor:pointer;margin-top:10px;
+  }
+  button.primary:hover{opacity:0.9;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Negative prefixes</h1>
+  <p class="sub">Fill in the correct negative prefix for each word, then press Check. You have 5 minutes.</p>
+
+  <div class="top-bar">
+    <div id="timer">05:00</div>
+    <div id="score">0 / 30 correct</div>
+    <button id="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
+  </div>
+
+  <div id="quiz" class="grid"></div>
+  <button id="check-btn" onclick="checkAll()">Check</button>
+</div>
+
+<div id="finish-overlay">
+  <div id="finish-box">
+    <div id="finish-emoji">🌱</div>
+    <h2 id="finish-title">Time's up!</h2>
+    <p id="final-score"></p>
+    <button class="primary" onclick="document.getElementById('finish-overlay').style.display='none'">OK</button>
+  </div>
+</div>
+
+<script>
+// prefix + stem = the full word
+const baseData = [
+  { prefix: "un",  stem: "fair" },
+  { prefix: "un",  stem: "predictable" },
+  { prefix: "un",  stem: "reliable" },
+  { prefix: "un",  stem: "reasonable" },
+  { prefix: "un",  stem: "aware" },
+  { prefix: "un",  stem: "available" },
+  { prefix: "in",  stem: "convenient" },
+  { prefix: "in",  stem: "experienced" },
+  { prefix: "in",  stem: "accurate" },
+  { prefix: "in",  stem: "efficient" },
+  { prefix: "in",  stem: "capable" },
+  { prefix: "in",  stem: "sensitive" },
+  { prefix: "in",  stem: "flexible" },
+  { prefix: "ir",  stem: "relevant" },
+  { prefix: "ir",  stem: "rational" },
+  { prefix: "in",  stem: "decisive" },
+  { prefix: "il",  stem: "logical" },
+  { prefix: "il",  stem: "legal" },
+  { prefix: "im",  stem: "polite" },
+  { prefix: "im",  stem: "patient" },
+  { prefix: "im",  stem: "perfect" },
+  { prefix: "un",  stem: "confident" },
+  { prefix: "im",  stem: "practical" },
+  { prefix: "ir",  stem: "replaceable" },
+  { prefix: "dis", stem: "honest" },
+  { prefix: "dis", stem: "respectful" },
+  { prefix: "un",  stem: "certain" },
+  { prefix: "ir",  stem: "responsible" },
+  { prefix: "in",  stem: "consistent" },
+  { prefix: "in",  stem: "active" }
+];
+
+// Fisher-Yates shuffle: new order on every page load
+function shuffle(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const data = shuffle(baseData);
+
+const scoreMessages = {
+  30: ["🏆", "Perfect! Flawless work!"],
+  29: ["🌟", "Outstanding!"],
+  28: ["🔥", "Absolutely brilliant!"],
+  27: ["🎉", "Excellent work!"],
+  26: ["💯", "Amazing job!"],
+  25: ["👏", "Fantastic!"],
+  24: ["⭐", "Superb!"],
+  23: ["😍", "Really impressive!"],
+  22: ["🙌", "Great work!"],
+  21: ["💪", "Very well done!"],
+  20: ["😊", "Great job!"],
+  19: ["👍", "Very good!"],
+  18: ["🌈", "Good work!"],
+  17: ["😎", "Nice job!"],
+  16: ["✨", "Well done!"],
+  15: ["🙂", "Not bad at all!"],
+  14: ["👌", "Good effort!"],
+  13: ["🌱", "You're getting there!"],
+  12: ["💛", "Keep it up!"],
+  11: ["💪", "You're making progress!"],
+  10: ["📚", "Good effort — keep practising!"],
+  9:  ["😊", "A decent start!"],
+  8:  ["✏️", "Keep working on it!"],
+  7:  ["🌿", "You're learning!"],
+  6:  ["💫", "Don't give up!"],
+  5:  ["🐣", "Every step counts!"],
+  4:  ["❤️", "Keep trying!"],
+  3:  ["🌻", "Practice makes progress!"],
+  2:  ["🤗", "You can do this!"],
+  1:  ["💖", "Every attempt matters!"],
+  0:  ["🌱", "Fresh start — try again!"]
+};
+
+function normalize(str){
+  return str.toLowerCase().trim().replace(/-+$/, "").replace(/\s+/g, "");
+}
+
+const quizEl = document.getElementById("quiz");
+let correctCount = 0;
+let timeLeft = 300; // 5 minutes
+let timerId = null;
+let finished = false;
+const inputs = [];
+
+data.forEach((item, idx) => {
+  const row = document.createElement("div");
+  row.className = "item";
+
+  const num = document.createElement("span");
+  num.className = "num";
+  num.textContent = (idx + 1) + ".";
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "answer";
+  input.autocomplete = "off";
+  input.autocapitalize = "off";
+  input.spellcheck = false;
+  input.maxLength = 6;
+  input.placeholder = "…";
+
+  const stem = document.createElement("span");
+  stem.className = "stem";
+  stem.textContent = item.stem;
+
+  // Kept in the DOM for reference, hidden from the learner via CSS
+  const reveal = document.createElement("span");
+  reveal.className = "reveal";
+  reveal.textContent = "Correct answer: " + item.prefix + item.stem;
+
+  // No live validation: colours appear only after Check / when time runs out
+  input.addEventListener("input", () => {
+    input.classList.remove("correct", "incorrect");
+  });
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter"){
+      e.preventDefault();
+      const next = inputs[idx + 1];
+      if (next) next.input.focus();
+    }
+  });
+
+  row.appendChild(num);
+  row.appendChild(input);
+  row.appendChild(stem);
+  row.appendChild(reveal);
+  quizEl.appendChild(row);
+  inputs.push({ input, item });
+});
+
+function checkAll(){
+  let count = 0;
+  inputs.forEach(({ input, item }) => {
+    const typed = normalize(input.value);
+    if (typed.length === 0){
+      input.classList.remove("correct", "incorrect");
+      return;
+    }
+    if (typed === item.prefix){
+      count++;
+      input.classList.add("correct");
+      input.classList.remove("incorrect");
+    } else {
+      input.classList.add("incorrect");
+      input.classList.remove("correct");
+    }
+  });
+  correctCount = count;
+  document.getElementById("score").textContent = correctCount + " / " + data.length + " correct";
+}
+
+function formatTime(t){
+  const m = Math.floor(t / 60).toString().padStart(2, "0");
+  const s = (t % 60).toString().padStart(2, "0");
+  return m + ":" + s;
+}
+
+function tick(){
+  timeLeft--;
+  const timerEl = document.getElementById("timer");
+  timerEl.textContent = formatTime(Math.max(timeLeft, 0));
+  if (timeLeft <= 10) timerEl.classList.add("warn");
+  if (timeLeft <= 0){
+    clearInterval(timerId);
+    endQuiz();
+  }
+}
+
+function endQuiz(){
+  finished = true;
+  checkAll();
+  // Unanswered fields are marked red at the end so students see what they missed
+  inputs.forEach(({ input }) => {
+    if (input.value.trim() === "") input.classList.add("incorrect");
+    input.disabled = true;
+  });
+  document.getElementById("check-btn").disabled = true;
+
+  const [emoji, message] = scoreMessages[correctCount] || scoreMessages[0];
+  document.getElementById("finish-emoji").textContent = emoji;
+  document.getElementById("finish-title").textContent = message;
+  document.getElementById("final-score").textContent =
+    "You got " + correctCount + " out of " + data.length + " correct.";
+  document.getElementById("finish-overlay").style.display = "flex";
+}
+
+function toggleTheme(){
+  const html = document.documentElement;
+  const btn = document.getElementById("theme-toggle");
+  if (html.getAttribute("data-theme") === "light"){
+    html.removeAttribute("data-theme");
+    btn.textContent = "☀ Light";
+  } else {
+    html.setAttribute("data-theme", "light");
+    btn.textContent = "🌙 Dark";
+  }
+}
+
+timerId = setInterval(tick, 1000);
+</script>
+</body>
+</html>
